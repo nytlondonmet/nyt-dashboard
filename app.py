@@ -103,11 +103,14 @@ html.Div([
             dcc.Graph(id='agegroup-scatter-plot', style={'height': '500px'}),
             html.Div(style={'height': '50px'})
         ], width=6),  # Adjust 'width' as needed to size the pie chart column
-        dbc.Col([  # Second column for another chart
+        dbc.Col([  # Second column for Data Table
+            html.H3('Data Table for Disabled Population by Age Group', style={'textAlign': 'center'}),
             dash_table.DataTable(
                 id='datatable-agegroup',
     style_data_conditional=style_data_conditional,
     sort_action='native',
+    filter_action="native",
+    filter_options={"placeholder_text": "Filter column..."},
     style_data={
         'color': 'black',
         'whiteSpace': 'normal',
@@ -124,16 +127,26 @@ html.Div([
 # Empty Div added at the bottom with a height of 50px (adjust as needed)
     html.Div(style={'height': '50px'})
 
-        ]),
+        ],style={'margin': '10px', 'border': '1px solid #d6d6d6'}, selected_style={
+            'margin': '10px', 
+            'border': '1px solid #a1a1a1',
+            'background': 'linear-gradient(to right, #a8e063, #56ab2f)'  # Gradient background for selected tab
+        }),
 
         dcc.Tab(label='SEN', children=[
             html.H3('Work in Progress...'),
             # Add other components or figures for this tab
-        ]),
+        ],style={'margin': '10px', 'border': '1px solid #d6d6d6'}, selected_style={
+            'margin': '10px', 
+            'border': '1px solid #a1a1a1',
+            'background': 'linear-gradient(to right,#a8e063, #56ab2f)'  # Gradient background for selected tab
+        }),
             
     ])
 
-])
+],
+style={'marginTop': '0', 'marginLeft': '0', 'marginRight': '0'}
+)
 
 @app.callback(
     Output('total-population-placeholder', 'children'),
@@ -325,6 +338,11 @@ def update_scatter_and_datatable(selected_la, selected_ag):
                      'title_standoff': 150,
                      },
             'yaxis': {'title': 'Total Population'},
+             'font': {
+            'family': "Arial, sans-serif",
+            'size': 14,  # Typical <h3> font size, adjust as needed
+            'color': "black"
+        },
             'plot_bgcolor': 'lightgrey'
         }
     }
