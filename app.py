@@ -9,6 +9,7 @@ from dash import dash_table
 
 
 df = pd.read_excel('Data/disabilitycensus2021_cleaned.xlsx')
+df_sen = pd.read_excel('Data/sen_school_level_ud.xls')
 
 #Summarized data
 df_summ = pd.read_excel('Data/summarised_population.xlsx')
@@ -134,7 +135,40 @@ html.Div([
         }),
 
         dcc.Tab(label='SEN', children=[
-            html.H3('Work in Progress...'),
+             html.Div([
+                    html.Label('Select Local Authority', style={'fontWeight': 'bold'}),
+                    dcc.Dropdown([la for la in df_sen['la_name'].unique()], id='la-choice-sen',
+                                 style={'width':'100%'}, multi=True, value=['Brent']),
+                        ],
+                        style={'width':'48%', 'display': 'inline-block'}
+                        ),
+
+                    html.Div([
+                        dbc.Card([
+                            dbc.CardBody([
+                                html.H4("Total SEN Schools", className="card-title"),
+                                html.P(id="total-sen-schools", className="card-text"),
+                            ]),
+                        ],
+                        style={"width": "18rem", "marginTop": "20px", "marginRight": "10px", "border": "5px solid #000 !important", "display": "inline-block"},  # Adjust styling as needed
+                        ),
+                        dbc.Card([
+                            dbc.CardBody([
+                                html.H4("Total School Strength", className="card-title"),
+                                html.P(id="total-school-strength", className="card-text"),
+                            ]),
+                        ],
+                        style={"width": "18rem", "marginTop": "20px", "marginRight": "10px", "border": "5px solid #000 !important", "display": "inline-block"},  # Adjust styling as needed
+                        ),
+                        dbc.Card([
+                            dbc.CardBody([
+                                html.H4("SEN Student's Count", className="card-title"),
+                                html.P(id="total-sen_ehc-strength", className="card-text"),
+                            ]),
+                        ],
+                        style={"width": "18rem", "marginTop": "20px", "marginRight": "10px", "border": "5px solid #000 !important", "display": "inline-block"},  # Adjust styling as needed
+                        ),
+                    ])
             # Add other components or figures for this tab
         ],style={'margin': '10px', 'border': '1px solid #d6d6d6'}, selected_style={
             'margin': '10px', 
@@ -147,6 +181,8 @@ html.Div([
 ],
 style={'marginTop': '0', 'marginLeft': '0', 'marginRight': '0'}
 )
+
+## Callbacks for Census 2021
 
 @app.callback(
     Output('total-population-placeholder', 'children'),
@@ -350,6 +386,36 @@ def update_scatter_and_datatable(selected_la, selected_ag):
     data = df_summ[df_summ['Age'].isin(selected_ag)].to_dict('records')
     
     return fig, data
+
+## Callbacks for SEN
+
+@app.callback(
+    [Output('total-sen-schools', 'children'),
+     Output('total-school-strength', 'children'),
+     Output('total-sen_ehc-strength', 'children'),
+     ],
+    [
+        Input('la-choice-sen', 'value')
+        
+    ]
+)
+def update_total_population(selected_la):
+    if selected_la is None:
+        # If no region is selected, calculate total population of all regions
+        total_schools = df_sen['school_name'].nunique()
+        total_strenght = df_sen['Total pupils'].sum()
+        total_sen_strength = df_sen['SEN support'].sum() + df_sen['EHC plan'].sum()
+    else:
+        # Calculate total population for selected regions
+         total_schools = df_sen[df_sen['la_name'].isin(selected_la)]['school_name'].nunique()
+
+         total_strenght = df_sen[df_sen['la_name'].isin(selected_la)]['Total pupils'].sum()
+
+         total_sen_strength = df_sen[df_sen['la_name'].isin(selected_la)]['SEN support'].sum() + df_sen[df_sen['la_name'].isin(selected_la)]['EHC plan'].sum()
+
+        
+
+    return  f'{total_schools}', f'{total_strenght}', f'{total_sen_strength}'
 
 
 
