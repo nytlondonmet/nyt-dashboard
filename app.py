@@ -6,10 +6,13 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objs as go
 from dash import dash_table
-
+import textwrap
 
 df = pd.read_excel('Data/disabilitycensus2021_cleaned.xlsx')
 df_sen = pd.read_excel('Data/sen_school_level_ud.xls')
+df_sen_grpby_la = pd.read_csv('Data/sen_school_grpby_la.csv')
+df_sen_school = pd.read_csv('Data/sen_school_wise.csv')
+df_dis_type = pd.read_csv('Data/sen_disability_type.csv')
 
 #Summarized data
 df_summ = pd.read_excel('Data/summarised_population.xlsx')
@@ -146,7 +149,7 @@ html.Div([
                     html.Div([
                         dbc.Card([
                             dbc.CardBody([
-                                html.H4("Total SEN Schools", className="card-title"),
+                                html.H4("Total Schools", className="card-title"),
                                 html.P(id="total-sen-schools", className="card-text"),
                             ]),
                         ],
@@ -154,7 +157,7 @@ html.Div([
                         ),
                         dbc.Card([
                             dbc.CardBody([
-                                html.H4("Total School Strength", className="card-title"),
+                                html.H4("Total Students", className="card-title"),
                                 html.P(id="total-school-strength", className="card-text"),
                             ]),
                         ],
@@ -168,7 +171,67 @@ html.Div([
                         ],
                         style={"width": "18rem", "marginTop": "20px", "marginRight": "10px", "border": "5px solid #000 !important", "display": "inline-block"},  # Adjust styling as needed
                         ),
-                    ])
+                    ]),
+            html.Div([
+    dbc.Row([  # This Row wraps all three charts
+        dbc.Col([  # First column for the pie chart
+            dcc.Graph(id='scatter-plot-sen')
+        ], width=4),  # Adjust 'width' as needed to size the pie chart column
+        dbc.Col([  # Second column for another chart
+            dcc.Graph(id='disability-type-treemap')  # Placeholder ID, replace with actual
+        ], width=4),  # Adjust 'width' as needed
+        dbc.Col([  # Third column for another chart
+            dcc.Graph(id='phase-type-bar-chart')  # Placeholder ID, replace with actual
+        ], width=4),  # Adjust 'width' as needed
+    ], style={"display": "flex", "justify-content": "center"}),  # Adjust styling as needed
+    # Other components can follow here
+]),
+
+html.Div([
+    dbc.Row([  # This Row wraps all two charts
+        dbc.Col([  html.H3('School Wise Strenght', style={'textAlign': 'center'}),
+            dash_table.DataTable(
+                id='datatable-school',
+                #style_data_conditional=style_data_conditional,
+                sort_action='native',
+                filter_action="native",
+                filter_options={"placeholder_text": "Filter column..."},
+                style_data={
+                    'color': 'black',
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                },
+                columns=[{"name": i, "id": i} for i in df_sen_school.columns],
+                page_size=10),
+
+                dbc.Col([html.Button("Download Data to CSV", id="btn_shool-wise-csv"),
+        dcc.Download(id="download-school-wise-csv"),], width=6)
+        ], width=6),  # Adjust 'width' as needed to size the pie chart column
+        
+               dbc.Col([  # Second column for another chart
+            html.H3('Datatable on Disability Type', style={'textAlign': 'center'}),
+            dash_table.DataTable(
+                id='datatable-disability-type',
+                #style_data_conditional=style_data_conditional,
+                sort_action='native',
+                filter_action="native",
+                filter_options={"placeholder_text": "Filter column..."},
+                style_data={
+                    'color': 'black',
+                    'whiteSpace': 'normal',
+                    'height': 'auto',
+                },
+                columns=[{"name": i, "id": i} for i in df_dis_type.columns],
+                page_size=10
+            ),
+            html.Button("Download Data to CSV", id="btn_dis-type-csv"),
+            dcc.Download(id="download-disability-type-csv")
+        ], width=6)  # Adjust 'width' as needed
+
+    ], style={"display": "flex", "justify-content": "center"}),  # Adjust styling as needed
+    # Other components can follow here
+]),
+
             # Add other components or figures for this tab
         ],style={'margin': '10px', 'border': '1px solid #d6d6d6'}, selected_style={
             'margin': '10px', 
@@ -417,7 +480,122 @@ def update_total_population(selected_la):
 
     return  f'{total_schools}', f'{total_strenght}', f'{total_sen_strength}'
 
+@app.callback(
+    [Output('scatter-plot-sen', 'figure'),
+     Output('datatable-school', 'data'),
+     Output('datatable-disability-type', 'data'),
+     Output('disability-type-treemap', 'figure'),
+     Output('phase-type-bar-chart', 'figure')
+     ],
+    [Input('la-choice-sen', 'value')]
+)
+def update_sen_scatter_plot(la_value):
 
+    global selected_la # Make the selected region(s) available globally
+    selected_la = la_value
+    fig = {
+        'data': [{
+            'x': df_sen_grpby_la['la_name'],
+            'y': df_sen_grpby_la['Total pupils'],
+            'type': 'scatter',
+            'mode': 'markers',
+            # Adjust marker size based on the 'Count' column, possibly scaled for better visualization
+            'marker': {
+                'size': df_sen_grpby_la['Total Sen'] / df_sen_grpby_la['Total Sen'].max() * 50,
+                'color': ['red' if la in selected_la else 'blue' for la in df_sen_grpby_la['la_name']]
+            },  # Example scaling
+
+            'text': [
+            f"Local Authority: {la}<br>Total Students: {pupils}<br>Total SEN Students: {sen}"
+            for la, pupils, sen in zip(df_sen_grpby_la['la_name'], df_sen_grpby_la['Total pupils'], df_sen_grpby_la['Total Sen'])
+        ],
+        'hoverinfo': 'text'
+        }],
+        'layout': {
+            'title': 'Total Strength vs. SEN Strength by Local Authority',
+            'margin': {'l': 60, 'r': 40, 't': 40, 'b': 170},  # Adjust 'b' (bottom) as needed
+            'xaxis': {
+                'title': 'Local Authority',
+                'title_standoff': 150,
+            },
+            'yaxis': {
+                'title': 'Total Strength'
+            },
+            'font': {
+                'family': "Arial, sans-serif",
+                'size': 14,  # Typical <h3> font size, adjust as needed
+                'color': "black"
+            },
+            'plot_bgcolor': 'lightgrey'
+        }
+    }
+
+    data = df_sen_school[df_sen_school['la_name'].isin(selected_la)].to_dict('records')
+    data_dis_type = df_dis_type[df_dis_type['la_name'].isin(selected_la)].to_dict('records')
+
+    # Group by 'primary_need' and sum the counts
+    grouped_df = df_dis_type[df_dis_type['la_name'].isin(selected_la)].groupby('primary_need').sum().reset_index()
+
+    treemap = go.Figure(
+    data=[
+        go.Treemap(
+            labels=grouped_df['primary_need'],
+            parents=[''] * len(grouped_df),  # No parents since this is a single-level treemap
+            values=grouped_df['number_of_pupils'],
+            textinfo='label + value',
+            text=[f'<br>'.join(textwrap.wrap(label, width=10)) for label in grouped_df['primary_need']]  # Wrap text
+        )
+    ],
+    layout=go.Layout(
+        title='Tree Map of Primary Need for Selected Borough(s)',
+        width=600,  # Set the width of the treemap
+        height=600 # Set the height of the treemap
+    )
+)
+    
+    phase_type_grouped_df = df_dis_type[df_dis_type['la_name'].isin(selected_la)].groupby('phase_type_grouping').sum().reset_index()
+
+
+    barchart = go.Figure(
+    data=[
+        go.Bar(
+            x=phase_type_grouped_df['phase_type_grouping'],
+            y=phase_type_grouped_df['number_of_pupils'],
+            text=phase_type_grouped_df['number_of_pupils'],
+            textposition='auto'
+        )
+    ],
+    layout=go.Layout(
+        title='Bar Chart of Phase Type Grouping for Selected Borough(s)',
+        xaxis=dict(title='Phase Type Grouping'),
+        yaxis=dict(title='Number of Pupils'),
+        width=600,  # Set the width of the barchart
+        height=600  # Set the height of the barchart
+     )
+    )
+    return fig, data, data_dis_type, treemap, barchart    
+
+@app.callback(
+    Output("download-school-wise-csv", "data"),
+    [Input("btn_shool-wise-csv", "n_clicks")],
+    prevent_initial_call=True
+)
+def download_school_wise_csv(n_clicks):
+    if n_clicks is None:
+        return dash.no_update
+    data = df_sen_school[df_sen_school['la_name'].isin(selected_la)]
+    return dcc.send_data_frame(data.to_csv, "school_wise.csv", index=False)
+
+@app.callback(
+    Output("download-disability-type-csv", "data"),
+    [Input("btn_dis-type-csv", "n_clicks")],
+    prevent_initial_call=True
+)
+def download_disability_type_csv(n_clicks):
+    if n_clicks is None:
+        return dash.no_update
+    data = df_dis_type[df_dis_type['la_name'].isin(selected_la)]
+    return dcc.send_data_frame(data.to_csv, "disability_type.csv", index=False)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
