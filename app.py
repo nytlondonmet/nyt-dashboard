@@ -35,6 +35,55 @@ for index, row in average_percentage_by_age_group.iterrows():
         'color': 'white'
     }),
 
+# Define the columns with logical display names
+columns_sen_school = [
+    {"name": "Local Authority", "id": "la_name"},
+    {"name": "School Name", "id": "school_name"},
+    {"name": "Total Strenght", "id": "Total pupils"},
+    {"name": "SEN Support", "id": "SEN support"},
+    {"name": "EHC Plan", "id": "EHC plan"},
+    {"name": "Total SEN & EHC", "id": "Total Sen"}
+]
+
+# Define the style for each column
+style_cell_conditional_sen_school = [
+    {'if': {'column_id': 'school_name'}, 'width': '45%'},  # Largest width
+    {'if': {'column_id': 'la_name'}, 'width': '25%'},      # Second largest width
+    {'if': {'column_id': 'Total pupils'}, 'width': '10%'},
+    {'if': {'column_id': 'SEN support'}, 'width': '10%'},
+    {'if': {'column_id': 'EHC plan'}, 'width': '10%'},
+    {'if': {'column_id': 'Total Sen'}, 'width': '10%'}
+]
+
+# Define the style for the header to wrap text, center-align, and bold
+style_header = {
+    'whiteSpace': 'normal',
+    'overflow': 'hidden',
+    'textOverflow': 'ellipsis',
+    'maxWidth': '100%',
+    'textAlign': 'center',  # Center-align the text
+    'fontWeight': 'bold'    # Make the text bold
+}
+
+# Define the columns with logical display names
+columns_dis_type = [
+    {"name": "Local Authority", "id": "la_name"},
+    {"name": "Affiliation", "id": "phase_type_grouping"},
+    {"name": "Disability Type", "id": "primary_need"},
+    {"name": "Total Count (All Ages)", "id": "number_of_pupils"},
+    {"name": "Male", "id": "pupil_gender_boys"},
+    {"name": "Female", "id": "pupil_gender_girls"}
+]
+
+# Define the style for each column
+style_cell_conditional_dis_type = [
+    {'if': {'column_id': 'primary_need'}, 'width': '40%'},  # Most space
+    {'if': {'column_id': 'phase_type_grouping'}, 'width': '25%'},  # Second most space
+    {'if': {'column_id': 'la_name'}, 'width': '20%'},  # Third most space
+    {'if': {'column_id': 'number_of_pupils'}, 'width': '5%'},
+    {'if': {'column_id': 'pupil_gender_boys'}, 'width': '5%'},
+    {'if': {'column_id': 'pupil_gender_girls'}, 'width': '5%'}
+]
 app = dash.Dash( external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
@@ -172,19 +221,23 @@ html.Div([
                         style={"width": "18rem", "marginTop": "20px", "marginRight": "10px", "border": "5px solid #000 !important", "display": "inline-block"},  # Adjust styling as needed
                         ),
                     ]),
+
+        # Add an empty div for spacing
+html.Div(style={"height": "50px"}),  # Adjust 'height' as needed for spacing     
             html.Div([
-    dbc.Row([  # This Row wraps all three charts
-        dbc.Col([  # First column for the pie chart
-            dcc.Graph(id='scatter-plot-sen')
-        ], width=4),  # Adjust 'width' as needed to size the pie chart column
-        dbc.Col([  # Second column for another chart
-            dcc.Graph(id='disability-type-treemap')  # Placeholder ID, replace with actual
-        ], width=4),  # Adjust 'width' as needed
-        dbc.Col([  # Third column for another chart
-            dcc.Graph(id='phase-type-bar-chart')  # Placeholder ID, replace with actual
-        ], width=4),  # Adjust 'width' as needed
-    ], style={"display": "flex", "justify-content": "center"}),  # Adjust styling as needed
-    # Other components can follow here
+    dbc.Row([
+        dbc.Col(html.H3("Local Authority wise SEN Strenght", style={'textAlign': 'center'}), width=4),
+        dbc.Col(html.H3("Disability Type Treemap", style={'textAlign': 'center'}), width=4),
+        dbc.Col(html.H3("Phase Type Bar Chart", style={'textAlign': 'center'}), width=4),
+    ], style={"display": "flex", "justify-content": "center"}),  # Row for titles
+
+    dbc.Row([
+        dbc.Col(dcc.Graph(id='scatter-plot-sen'), width=4),  # First column for the scatter plot
+        dbc.Col(dcc.Graph(id='disability-type-treemap'), width=4),  # Second column for the treemap
+        dbc.Col(dcc.Graph(id='phase-type-bar-chart'), width=4),  # Third column for the bar chart
+
+    ], style={"display": "flex", "justify-content": "center"},
+    justify="center"),  # Center the columns
 ]),
 
 html.Div([
@@ -201,7 +254,9 @@ html.Div([
                     'whiteSpace': 'normal',
                     'height': 'auto',
                 },
-                columns=[{"name": i, "id": i} for i in df_sen_school.columns],
+                columns=columns_sen_school,
+                style_cell_conditional=style_cell_conditional_sen_school,  # Apply the style here
+                style_header=style_header, 
                 page_size=10),
 
                 dbc.Col([html.Button("Download Data to CSV", id="btn_shool-wise-csv"),
@@ -221,7 +276,9 @@ html.Div([
                     'whiteSpace': 'normal',
                     'height': 'auto',
                 },
-                columns=[{"name": i, "id": i} for i in df_dis_type.columns],
+                columns=columns_dis_type,
+                style_header=style_header,  # Apply the header style here
+                style_cell_conditional=style_cell_conditional_dis_type,  # Apply the style here
                 page_size=10
             ),
             html.Button("Download Data to CSV", id="btn_dis-type-csv"),
@@ -493,6 +550,9 @@ def update_sen_scatter_plot(la_value):
 
     global selected_la # Make the selected region(s) available globally
     selected_la = la_value
+
+    
+    #Scatter plot for SEN data
     fig = {
         'data': [{
             'x': df_sen_grpby_la['la_name'],
@@ -512,11 +572,12 @@ def update_sen_scatter_plot(la_value):
         'hoverinfo': 'text'
         }],
         'layout': {
-            'title': 'Total Strength vs. SEN Strength by Local Authority',
+            
             'margin': {'l': 60, 'r': 40, 't': 40, 'b': 170},  # Adjust 'b' (bottom) as needed
             'xaxis': {
                 'title': 'Local Authority',
                 'title_standoff': 150,
+                'tickangle': 45  # Rotate the x-tick labels by 45 degrees
             },
             'yaxis': {
                 'title': 'Total Strength'
@@ -547,7 +608,7 @@ def update_sen_scatter_plot(la_value):
         )
     ],
     layout=go.Layout(
-        title='Tree Map of Primary Need for Selected Borough(s)',
+        
         width=600,  # Set the width of the treemap
         height=600 # Set the height of the treemap
     )
@@ -566,7 +627,7 @@ def update_sen_scatter_plot(la_value):
         )
     ],
     layout=go.Layout(
-        title='Bar Chart of Phase Type Grouping for Selected Borough(s)',
+        
         xaxis=dict(title='Phase Type Grouping'),
         yaxis=dict(title='Number of Pupils'),
         width=600,  # Set the width of the barchart
