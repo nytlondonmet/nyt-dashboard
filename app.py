@@ -88,7 +88,7 @@ app = dash.Dash( external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 app.layout = html.Div([
-    html.Div("NYT Dashboard", style={'fontSize': 50, 'textAlign': 'center', 'color': 'white', 'backgroundColor': 'Green'}),
+    html.Div("Disability Research Dashboard", style={'fontSize': 50, 'textAlign': 'center', 'color': 'white', 'backgroundColor': 'Green'}),
     dcc.Tabs([
         dcc.Tab(label='Census 2021', children=[
             html.Div([
