@@ -117,10 +117,12 @@ app.layout = html.Div([
                     html.H4("Total Population", className="card-title"),
                     # Placeholder for dynamic total population
                     html.P(id="total-population-placeholder", className="card-text"),
+                    
                     ]),
                 ],
                 style={"width": "18rem", "marginTop": "20px", "marginRight": "10px", "border": "5px solid #000 !important"},  # Adjust styling as needed
             ),
+            dbc.Tooltip("Total Population for the Selected Borough(s) and Selected Age Group(s)", target="total-population-placeholder"),
             dbc.Card(
                 [
                     dbc.CardBody(
@@ -132,7 +134,9 @@ app.layout = html.Div([
                     ),
                 ],
                 style={"width": "18rem", "marginTop": "20px","border": "5px solid #000 !important"},  # Adjust styling as needed
-            )], 
+            ),
+            dbc.Tooltip("Disabled Population for the Selected Borough(s) and Selected Age Group(s)", target="disabled-population-placeholder"),
+            ], 
             style={"display":"flex"}
             ),
             # Inside your layout definition
@@ -140,15 +144,35 @@ html.Div([
     dbc.Row([  # This Row wraps all three charts
         dbc.Col([  # First column for the pie chart
             dcc.Graph(id='disability-by-sex-chart')
-        ], width=4),  # Adjust 'width' as needed to size the pie chart column
+        ], id="disability-by-sex-col", width=4),  # Adjust 'width' as needed to size the pie chart column
         dbc.Col([  # Second column for another chart
             dcc.Graph(id='disability-by-category-chart')  # Placeholder ID, replace with actual
-        ], width=4),  # Adjust 'width' as needed
+        ], id="disability-by-category-col", width=4),  # Adjust 'width' as needed
         dbc.Col([  # Third column for another chart
             dcc.Graph(id='population-bar-chart')  # Placeholder ID, replace with actual
         ], width=4),  # Adjust 'width' as needed
     ], style={"display": "flex", "justify-content": "center"}),  # Adjust styling as needed
     # Other components can follow here
+
+     # Add tooltips for the columns
+    dbc.Tooltip(
+        html.Span([
+            "This chart shows disability by sex.",
+            html.Br(),
+            "Hover over Pie Chart for more information."
+        ], style={"textAlign": "left"}),
+        target="disability-by-sex-col"
+    ),
+    dbc.Tooltip(
+        html.Span([
+            "This chart shows proportion for population for different disability category as per Census 2021.",
+            html.Br(),
+            "Hover over chart for more information.",
+            html.Br(),
+            "Click on any category on legend to exclude it from analysis."
+        ], style={"textAlign": "left"}),
+        target="disability-by-category-col"
+    ),
 ]),
 html.Div([
     dbc.Row([  # This Row wraps all three charts
@@ -177,6 +201,14 @@ html.Div([
     # Other components can follow here
 ]
 ),
+
+ # Data source information with hyperlink
+        html.Div([
+            "Data Source: Disability, England and Wales: Census 2021. For more information, ",
+            html.A("click here", href="https://www.ons.gov.uk/peoplepopulationandcommunity/healthandsocialcare/healthandwellbeing/bulletins/disabilityenglandandwales/census2021#:~:text=does%20it%20matter%3F-,Disability%20in%20England%20and%20Wales,19.5%25%20(10.0%20million", target="_blank")
+            ], style={'textAlign': 'center', 'marginTop': '20px', 'fontSize': '14px', 'color': 'grey'}),
+
+
 # Empty Div added at the bottom with a height of 50px (adjust as needed)
     html.Div(style={'height': '50px'})
 
@@ -289,12 +321,23 @@ html.Div([
     # Other components can follow here
 ]),
 
+# Data source information with hyperlink
+        html.Div([
+            "Data Source: Special educational needs in England. For more information, ",
+            html.A("click here", href="https://explore-education-statistics.service.gov.uk/find-statistics/special-educational-needs-in-england", target="_blank")
+            ], style={'textAlign': 'center', 'marginTop': '20px', 'fontSize': '14px', 'color': 'grey'}),
+
+
+# Empty Div added at the bottom with a height of 50px (adjust as needed)
+    html.Div(style={'height': '50px'})
             # Add other components or figures for this tab
         ],style={'margin': '10px', 'border': '1px solid #d6d6d6'}, selected_style={
             'margin': '10px', 
             'border': '1px solid #a1a1a1',
             'background': 'linear-gradient(to right,#a8e063, #56ab2f)'  # Gradient background for selected tab
         }),
+
+        
             
     ])
 
@@ -375,7 +418,7 @@ def update_pie_chart(selected_la, selected_ag):
                    hoverinfo='label+percent+value')
         ],
         'layout': {
-            'title': 'Disability by Sex for '
+            'title': 'Disability by Sex for Selected Local Authorities and Age Groups',
         }
     }
     return new_figure
@@ -484,8 +527,12 @@ def update_scatter_and_datatable(selected_la, selected_ag):
             # Adjust marker size based on the 'Count' column, possibly scaled for better visualization
             'marker': {'size': grouped_df['Count'] / grouped_df['Count'].max() * 50,
                        'color': ['red' if la in selected_la else 'blue' for la in grouped_df['Local Authority']]
-                       }  # Example scaling
-            
+                       },  # Example scaling
+            'text': [
+            f"Local Authority: {la}<br>Total Population: {pop}<br>Disabled Population: {dis_pop}"
+            for la, pop, dis_pop in zip(grouped_df['Local Authority'], grouped_df['Population'], grouped_df['Count'])
+        ],
+        'hoverinfo': 'text'
         }],
         'layout': {
             'title': 'Population vs. Disabled Population Count by Local Authority',
