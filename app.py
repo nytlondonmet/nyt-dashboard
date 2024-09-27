@@ -511,7 +511,7 @@ def update_scatter_and_datatable(selected_la, selected_ag):
     # Filter the DataFrame for the selected age group
     filtered_df = df[(df['Age'].isin(selected_ag))
                      & (df['Sex'].isin(['Male', 'Female']))
-                     & (df['Disability Status'].isin(['Disabled; limited a lot']))]
+                     & (df['Disability Status'].isin(['Disabled; limited a lot','Disabled; limited a little']))]
     
     selected_borough = selected_la
     # Group by 'Local Authority' and sum the populations and the disabled count
@@ -521,7 +521,7 @@ def update_scatter_and_datatable(selected_la, selected_ag):
     fig = {
         'data': [{
             'x': grouped_df['Local Authority'],
-            'y': grouped_df['Population'],
+            'y': grouped_df['Population']/2,
             'type': 'scatter',
             'mode': 'markers',
             # Adjust marker size based on the 'Count' column, possibly scaled for better visualization
@@ -529,8 +529,8 @@ def update_scatter_and_datatable(selected_la, selected_ag):
                        'color': ['red' if la in selected_la else 'blue' for la in grouped_df['Local Authority']]
                        },  # Example scaling
             'text': [
-            f"Local Authority: {la}<br>Total Population: {pop}<br>Disabled Population: {dis_pop}"
-            for la, pop, dis_pop in zip(grouped_df['Local Authority'], grouped_df['Population'], grouped_df['Count'])
+            f"Local Authority: {la}<br>Total Population: {int(pop)}<br>Disabled Population: {dis_pop}"
+            for la, pop, dis_pop in zip(grouped_df['Local Authority'], grouped_df['Population']/2, grouped_df['Count'])
         ],
         'hoverinfo': 'text'
         }],
