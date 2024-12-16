@@ -345,6 +345,7 @@ html.Div([
 style={'marginTop': '0', 'marginLeft': '0', 'marginRight': '0'}
 )
 
+
 ## Callbacks for Census 2021
 
 @app.callback(
